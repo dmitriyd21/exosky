@@ -26,10 +26,22 @@
         color: white;
         font-family: Arial, sans-serif;
       }
+      #centerBtn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 10px 20px;
+        background-color: #f00;
+        color: white;
+        border: none;
+        font-family: Arial, sans-serif;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
     <div id="info"></div>
+    <div id="centerBtn">Центрировать камеру</div>
 
     <script type="importmap">
       {
@@ -45,7 +57,13 @@
       import { OrbitControls } from "three/addons/controls/OrbitControls.js";
       import { EXRLoader } from "three/addons/loaders/EXRLoader.js"; // EXRLoader для текстур
 
-      let camera, controls, scene, renderer, raycaster, mouse, targetObject = null;
+      let camera,
+        controls,
+        scene,
+        renderer,
+        raycaster,
+        mouse,
+        targetObject = null;
 
       // Загрузка данных из exoplanets.json
       fetch("exoplanets.json")
@@ -86,8 +104,8 @@
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.2;
-        controls.minDistance = 10; // Вернём исходное минимальное расстояние
-        controls.maxDistance = 10000; // Вернём исходное максимальное расстояние
+        controls.minDistance = 10; // Минимальное расстояние до объектов
+        controls.maxDistance = 10000; // Максимальное расстояние до объектов
         controls.maxPolarAngle = Math.PI / 2;
 
         // Добавление звёзд и планет
@@ -108,6 +126,12 @@
         scene.add(ambientLight);
 
         window.addEventListener("resize", onWindowResize);
+
+        document.getElementById("centerBtn").addEventListener("click", () => {
+          camera.position.set(0, 0, 1000);
+          controls.target.set(0, 0, 0);
+          controls.update();
+        });
       }
 
       // Добавление звёзд на основе данных из exoplanets.json
@@ -116,15 +140,22 @@
           if (star.ra && star.dec) {
             const raRad = THREE.MathUtils.degToRad(star.ra);
             const decRad = THREE.MathUtils.degToRad(star.dec);
-            const distance = star.sy_dist ? star.sy_dist * 10 : 100; // масштабируем расстояние
+            const distance = star.sy_dist ? star.sy_dist * 10 : 100;
 
-            const x = distance * Math.cos(decRad) * Math.cos(raRad);
-            const y = distance * Math.sin(decRad);
-            const z = distance * Math.cos(decRad) * Math.sin(raRad);
+            let x = distance * Math.cos(decRad) * Math.cos(raRad);
+            let y = distance * Math.sin(decRad);
+            let z = distance * Math.cos(decRad) * Math.sin(raRad);
+
+            // Увеличение случайного сдвига объектов, чтобы они не сливались
+            x += Math.random() * 75 - 37.5;
+            y += Math.random() * 75 - 37.5;
+            z += Math.random() * 75 - 37.5;
 
             // Создание сфер для звёзд
-            const starGeometry = new THREE.SphereGeometry(5, 32, 32); // Сфера для звёзд (размер 5)
-            const starMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            const starGeometry = new THREE.SphereGeometry(5, 32, 32);
+            const starMaterial = new THREE.MeshBasicMaterial({
+              color: 0x708090,
+            });
             const starSphere = new THREE.Mesh(starGeometry, starMaterial);
             starSphere.position.set(x, y, z);
             starSphere.userData = {
@@ -150,14 +181,20 @@
             let y = distance * Math.sin(decRad);
             let z = distance * Math.cos(decRad) * Math.sin(raRad);
 
-            // Решение проблемы слияния объектов — случайный сдвиг
-            x += Math.random() * 10 - 5;
-            y += Math.random() * 10 - 5;
-            z += Math.random() * 10 - 5;
+            // Увеличение случайного сдвига объектов, чтобы они не сливались
+            x += Math.random() * 75 - 37.5;
+            y += Math.random() * 75 - 37.5;
+            z += Math.random() * 75 - 37.5;
 
-            // Создание сфер для планет
-            const planetGeometry = new THREE.SphereGeometry(planet.pl_rade / 2, 32, 32); // Правильные размеры планет
-            const planetMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            // Увеличение размера планет, делим радиус на 5
+            const planetGeometry = new THREE.SphereGeometry(
+              planet.pl_rade / 5,
+              32,
+              32
+            );
+            const planetMaterial = new THREE.MeshBasicMaterial({
+              color: 0x006400,
+            });
             const planetSphere = new THREE.Mesh(planetGeometry, planetMaterial);
             planetSphere.position.set(x, y, z);
             planetSphere.userData = {
