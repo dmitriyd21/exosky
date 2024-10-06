@@ -75,8 +75,7 @@
     </style>
   </head>
   <body>
-    <div id="info"></div>
-    <div id="centerBtn">Центрировать камеру</div>
+    <div id="centerBtn">Center camera</div>
     <div id="sidebar"></div>
 
     <script type="importmap">
@@ -99,7 +98,7 @@
         raycaster,
         mouse,
         targetObject = null,
-        planetObjects = []; // Массив для хранения планетных объектов в сцене
+        planetObjects = [];
 
       fetch("exoplanets.json")
         .then((response) => response.json())
@@ -150,15 +149,15 @@
             const magnitude = star[2];
             const parallax = star[3];
 
-            // Если параллакс (и, следовательно, расстояние) неизвестен, пропускаем эту звезду
+            // If parallax (and therefore distance) is unknown, skip this star
             if (parallax === null || parallax <= 0) {
-              return; // Пропускаем звезды с null или невалидным значением параллакса
+              return; // Skip stars with null or invalid parallax value
             }
 
             const raRad = THREE.MathUtils.degToRad(ra);
             const decRad = THREE.MathUtils.degToRad(dec);
 
-            let dist = parallax > 0 ? (1 / parallax) * 2000 : 200; // Рассчитываем дистанцию
+            let dist = parallax > 0 ? (1 / parallax) * 2000 : 200; // Calculating the distance
 
             const x = dist * Math.cos(decRad) * Math.cos(raRad);
             const y = dist * Math.sin(decRad);
@@ -234,7 +233,7 @@
             };
             scene.add(planetSphere);
 
-            // Добавляем планетные объекты в массив для быстрого доступа
+            // Adding planetary objects to the array for quick access
             planetObjects.push(planetSphere);
           }
         });
@@ -277,13 +276,13 @@
               </div>
             `;
 
-            // Добавляем обработчик клика для каждого элемента планеты
+            // Add a click handler for each planet element
             planetElement.querySelector("h2").addEventListener("click", () => {
               const planetInfo = planetElement.querySelector(".planet-info");
               planetInfo.style.display =
                 planetInfo.style.display === "none" ? "block" : "none";
 
-              // При клике на элемент меню приближаем камеру к планете
+              // When you click on a menu item, we bring the camera closer to the planet
               const clickedPlanet = planetObjects.find(
                 (obj) => obj.userData.name === planet.pl_name
               );
@@ -292,7 +291,7 @@
                   clickedPlanet.position
                 );
                 camera.position.set(
-                  targetPos.x + 100, // Немного отодвигаем камеру назад от планеты
+                  targetPos.x + 100, // Move the camera back a little from the planet
                   targetPos.y + 50,
                   targetPos.z + 100
                 );
