@@ -26,6 +26,7 @@
         color: white;
         font-family: Arial, sans-serif;
       }
+
       #centerBtn {
         position: absolute;
         top: 10px;
@@ -37,11 +38,46 @@
         font-family: Arial, sans-serif;
         cursor: pointer;
       }
+
+      #sidebar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 300px;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        overflow-y: auto;
+        padding: 10px;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+      }
+
+      .category {
+        margin-bottom: 20px;
+      }
+
+      .category h2 {
+        background-color: #333;
+        padding: 5px;
+        cursor: pointer;
+      }
+
+      .planet-info {
+        display: none;
+        padding-left: 10px;
+      }
+
+      .planet-info p {
+        margin: 0;
+        padding: 5px 0;
+      }
     </style>
   </head>
   <body>
     <div id="info"></div>
     <div id="centerBtn">Центрировать камеру</div>
+    <div id="sidebar"></div>
 
     <script type="importmap">
       {
@@ -72,179 +108,171 @@
           init(data);
         });
 
-      function init(data) {
-        // Создание сцены
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000);
+        function init(data) {
+  // Creating the scene
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
 
-        // Загрузка текстуры фона
-        new EXRLoader().load("./starmap.exr", function (texture) {
-          texture.mapping = THREE.EquirectangularReflectionMapping;
-          scene.background = texture;
-          scene.environment = texture;
-        });
+  // Load the background texture
+  new EXRLoader().load("./starmap.exr", function (texture) {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    scene.background = texture;
+    scene.environment = texture;
+  });
 
-        // Создание рендерера
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setAnimationLoop(animate);
-        document.body.appendChild(renderer.domElement);
+  // Create the renderer
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setAnimationLoop(animate);
+  document.body.appendChild(renderer.domElement);
 
-        // Создание камеры
-        camera = new THREE.PerspectiveCamera(
-          60,
-          window.innerWidth / window.innerHeight,
-          1,
-          5000
-        );
-        camera.position.set(400, 200, 0);
+  // Create the camera
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
+  camera.position.set(400, 200, 0);
 
-        // Управление камерой
-        controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.2;
-        controls.minDistance = 10; // Минимальное расстояние до объектов
-        controls.maxDistance = 10000; // Максимальное расстояние до объектов
-        controls.maxPolarAngle = Math.PI / 2;
+  // Camera controls
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.2;
+  controls.minDistance = 10;
+  controls.maxDistance = 10000;
+  controls.maxPolarAngle = Math.PI / 2;
 
-        // Добавление звёзд и планет
-        addStars(data);
-        addExoplanets(data);
+  // Load star data from stars.json and render
+  fetch("stars.json")
+    .then((response) => response.json())
+    .then((stars) => {
+      addStars(stars);
+    });
 
-        // Инициализация Raycaster для обработки кликов
-        raycaster = new THREE.Raycaster();
-        mouse = new THREE.Vector2();
-        document.addEventListener("click", onClick, false);
+  // Add exoplanets
+  addExoplanets(data);
 
-        // Добавление света
-        const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
-        dirLight1.position.set(1, 1, 1);
-        scene.add(dirLight1);
+  // Raycaster initialization for click interaction
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+  document.addEventListener("click", onClick, false);
 
-        const ambientLight = new THREE.AmbientLight(0x555555);
-        scene.add(ambientLight);
+  // Add lighting
+  const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
+  dirLight1.position.set(1, 1, 1);
+  scene.add(dirLight1);
 
-        window.addEventListener("resize", onWindowResize);
+  const ambientLight = new THREE.AmbientLight(0x555555);
+  scene.add(ambientLight);
 
-        document.getElementById("centerBtn").addEventListener("click", () => {
-          camera.position.set(0, 0, 1000);
-          controls.target.set(0, 0, 0);
-          controls.update();
-        });
-      }
+  // Window resize listener
+  window.addEventListener("resize", onWindowResize);
 
-      // Добавление звёзд на основе данных из exoplanets.json
-      function addStars(data) {
-        data.forEach((star) => {
-          if (star.ra && star.dec) {
-            const raRad = THREE.MathUtils.degToRad(star.ra);
-            const decRad = THREE.MathUtils.degToRad(star.dec);
-            const distance = star.sy_dist ? star.sy_dist * 10 : 100;
+  // Center button functionality
+  document.getElementById("centerBtn").addEventListener("click", () => {
+    camera.position.set(0, 0, 1000);
+    controls.target.set(0, 0, 0);
+    controls.update();
+  });
+}
 
-            let x = distance * Math.cos(decRad) * Math.cos(raRad);
-            let y = distance * Math.sin(decRad);
-            let z = distance * Math.cos(decRad) * Math.sin(raRad);
+function addStars(stars) {
+  const textureLoader = new THREE.TextureLoader();
+  const starTexture = textureLoader.load("star.png");
 
-            // Увеличение случайного сдвига объектов, чтобы они не сливались
-            x += Math.random() * 75 - 37.5;
-            y += Math.random() * 75 - 37.5;
-            z += Math.random() * 75 - 37.5;
+  stars.forEach((star) => {
+    if (star.ra && star.dec && star.distance) {
+      const raRad = THREE.MathUtils.degToRad(star.ra);
+      const decRad = THREE.MathUtils.degToRad(star.dec);
+      const distance = star.distance * 10; // Scale the distance
 
-            // Создание сфер для звёзд
-            const starGeometry = new THREE.SphereGeometry(5, 32, 32);
-            const starMaterial = new THREE.MeshBasicMaterial({
-              color: 0x708090,
-            });
-            const starSphere = new THREE.Mesh(starGeometry, starMaterial);
-            starSphere.position.set(x, y, z);
-            starSphere.userData = {
-              name: star.sy_name,
-              ra: star.ra,
-              dec: star.dec,
-              distance: star.sy_dist,
-            };
-            scene.add(starSphere);
-          }
-        });
-      }
+      const x = distance * Math.cos(decRad) * Math.cos(raRad);
+      const y = distance * Math.sin(decRad);
+      const z = distance * Math.cos(decRad) * Math.sin(raRad);
 
-      // Добавление экзопланет
-      function addExoplanets(data) {
-        data.forEach((planet) => {
-          if (planet.pl_name && planet.ra && planet.dec) {
-            const raRad = THREE.MathUtils.degToRad(planet.ra);
-            const decRad = THREE.MathUtils.degToRad(planet.dec);
-            const distance = planet.sy_dist ? planet.sy_dist * 10 : 100;
+      // Add star sprite
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: starTexture,
+        color: 0xffffff,
+        opacity: star.phot_g_mean_mag < 15 ? 1 : 0.5, // Dim stars based on magnitude
+        transparent: true,
+      });
 
-            let x = distance * Math.cos(decRad) * Math.cos(raRad);
-            let y = distance * Math.sin(decRad);
-            let z = distance * Math.cos(decRad) * Math.sin(raRad);
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.position.set(x, y, z);
+      sprite.scale.set(10, 10, 1); // Adjust the size of the stars
+      scene.add(sprite);
+    }
+  });
+}
 
-            // Увеличение случайного сдвига объектов, чтобы они не сливались
-            x += Math.random() * 75 - 37.5;
-            y += Math.random() * 75 - 37.5;
-            z += Math.random() * 75 - 37.5;
+// Add exoplanets as before
+function addExoplanets(data) {
+  data.forEach((planet) => {
+    if (planet.pl_name && planet.ra && planet.dec) {
+      const raRad = THREE.MathUtils.degToRad(planet.ra);
+      const decRad = THREE.MathUtils.degToRad(planet.dec);
+      const distance = planet.sy_dist ? planet.sy_dist * 10 : 100;
 
-            // Увеличение размера планет, делим радиус на 5
-            const planetGeometry = new THREE.SphereGeometry(
-              planet.pl_rade / 5,
-              32,
-              32
-            );
-            const planetMaterial = new THREE.MeshBasicMaterial({
-              color: 0x006400,
-            });
-            const planetSphere = new THREE.Mesh(planetGeometry, planetMaterial);
-            planetSphere.position.set(x, y, z);
-            planetSphere.userData = {
-              name: planet.pl_name,
-              ra: planet.ra,
-              dec: planet.dec,
-              distance: planet.sy_dist,
-            };
-            scene.add(planetSphere);
-          }
-        });
-      }
+      let x = distance * Math.cos(decRad) * Math.cos(raRad);
+      let y = distance * Math.sin(decRad);
+      let z = distance * Math.cos(decRad) * Math.sin(raRad);
 
-      // Обработка кликов
-      function onClick(event) {
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      // Offset objects slightly to prevent overlap
+      x += Math.random() * 75 - 37.5;
+      y += Math.random() * 75 - 37.5;
+      z += Math.random() * 75 - 37.5;
 
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(scene.children);
+      // Create planet spheres, increase size slightly
+      const planetGeometry = new THREE.SphereGeometry(planet.pl_rade / 3, 32, 32);
+      const planetMaterial = new THREE.MeshBasicMaterial({ color: 0x006400 });
+      const planetSphere = new THREE.Mesh(planetGeometry, planetMaterial);
+      planetSphere.position.set(x, y, z);
+      planetSphere.userData = {
+        name: planet.pl_name,
+        ra: planet.ra,
+        dec: planet.dec,
+        distance: planet.sy_dist,
+      };
+      scene.add(planetSphere);
+    }
+  });
+}
 
-        if (intersects.length > 0) {
-          targetObject = intersects[0].object;
-          if (targetObject.userData.name) {
-            document.getElementById(
-              "info"
-            ).innerHTML = `Объект: ${targetObject.userData.name}<br>Координаты: RA=${targetObject.userData.ra}, Dec=${targetObject.userData.dec}<br>Расстояние: ${targetObject.userData.distance} парсек`;
+// Handle click events on stars or planets
+function onClick(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-            // Приближение к объекту
-            const targetPos = new THREE.Vector3().copy(targetObject.position);
-            controls.target.copy(targetPos); // Установка новой цели для камеры
-            controls.update();
-          }
-        }
-      }
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children);
 
-      function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      }
+  if (intersects.length > 0) {
+    targetObject = intersects[0].object;
+    if (targetObject.userData.name) {
+      document.getElementById("info").innerHTML = `Объект: ${targetObject.userData.name}<br>Координаты: RA=${targetObject.userData.ra}, Dec=${targetObject.userData.dec}<br>Расстояние: ${targetObject.userData.distance} парсек`;
 
-      function animate() {
-        controls.update();
-        render();
-      }
+      // Focus camera on selected object
+      const targetPos = new THREE.Vector3().copy(targetObject.position);
+      controls.target.copy(targetPos);
+      controls.update();
+    }
+  }
+}
 
-      function render() {
-        renderer.render(scene, camera);
-      }
+// Handle window resize
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
+  controls.update();
+  render();
+}
+
+function render() {
+  renderer.render(scene, camera);
+}
+
     </script>
   </body>
 </html>
