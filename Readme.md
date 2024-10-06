@@ -17,21 +17,20 @@
     ```bash
     git clone https://github.com/yourusername/exosky.git
     cd exosky
+    npm install
     ```
 
 2. Install a simple HTTP server if you don't have one installed. If you have Python installed, run:
-
+   
+   ```bash
+    # $ python -m http.server 8080
+    ```
+   OR
     ```bash
-    python -m http.server 8080
+    # npx vite
     ```
 
-3. Run the server in the root folder of the project:
-
-    ```bash
-    python -m http.server 8080
-    ```
-
-4. Open your browser and navigate to `http://localhost:8080/`. The visualization should load in the browser window.
+5. Open your browser and navigate to `http://localhost:8080/`. The visualization should load in the browser window.
 
 ## Usage
 
