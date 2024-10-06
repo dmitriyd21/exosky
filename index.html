@@ -148,12 +148,17 @@
             const ra = star[0];
             const dec = star[1];
             const magnitude = star[2];
-            const distance = star[3];
+            const parallax = star[3];
+
+            // Если параллакс (и, следовательно, расстояние) неизвестен, пропускаем эту звезду
+            if (parallax === null || parallax <= 0) {
+              return; // Пропускаем звезды с null или невалидным значением параллакса
+            }
 
             const raRad = THREE.MathUtils.degToRad(ra);
             const decRad = THREE.MathUtils.degToRad(dec);
 
-            let dist = distance > 0 ? (1 / distance) * 2000 : 200;
+            let dist = parallax > 0 ? (1 / parallax) * 2000 : 200; // Рассчитываем дистанцию
 
             const x = dist * Math.cos(decRad) * Math.cos(raRad);
             const y = dist * Math.sin(decRad);
@@ -167,7 +172,7 @@
 
             const sprite = new THREE.Sprite(spriteMaterial);
             sprite.position.set(x, y, z);
-            sprite.scale.set(10, 10, 1);
+            sprite.scale.set(15, 15, 1);
             scene.add(sprite);
           });
         }
@@ -283,7 +288,9 @@
                 (obj) => obj.userData.name === planet.pl_name
               );
               if (clickedPlanet) {
-                const targetPos = new THREE.Vector3().copy(clickedPlanet.position);
+                const targetPos = new THREE.Vector3().copy(
+                  clickedPlanet.position
+                );
                 camera.position.set(
                   targetPos.x + 100, // Немного отодвигаем камеру назад от планеты
                   targetPos.y + 50,
