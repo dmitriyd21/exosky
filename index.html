@@ -98,7 +98,8 @@
         renderer,
         raycaster,
         mouse,
-        targetObject = null;
+        targetObject = null,
+        planetObjects = []; // Массив для хранения планетных объектов в сцене
 
       fetch("exoplanets.json")
         .then((response) => response.json())
@@ -125,7 +126,7 @@
           1,
           5000
         );
-        camera.position.set(800, 400, 0); // Увеличиваем положение камеры
+        camera.position.set(800, 400, 0);
 
         // Camera controls
         controls = new OrbitControls(camera, renderer.domElement);
@@ -227,6 +228,9 @@
               distance: planet.sy_dist,
             };
             scene.add(planetSphere);
+
+            // Добавляем планетные объекты в массив для быстрого доступа
+            planetObjects.push(planetSphere);
           }
         });
       }
@@ -268,10 +272,26 @@
               </div>
             `;
 
+            // Добавляем обработчик клика для каждого элемента планеты
             planetElement.querySelector("h2").addEventListener("click", () => {
               const planetInfo = planetElement.querySelector(".planet-info");
               planetInfo.style.display =
                 planetInfo.style.display === "none" ? "block" : "none";
+
+              // При клике на элемент меню приближаем камеру к планете
+              const clickedPlanet = planetObjects.find(
+                (obj) => obj.userData.name === planet.pl_name
+              );
+              if (clickedPlanet) {
+                const targetPos = new THREE.Vector3().copy(clickedPlanet.position);
+                camera.position.set(
+                  targetPos.x + 100, // Немного отодвигаем камеру назад от планеты
+                  targetPos.y + 50,
+                  targetPos.z + 100
+                );
+                controls.target.copy(targetPos);
+                controls.update();
+              }
             });
 
             sidebar.appendChild(planetElement);
