@@ -23,11 +23,11 @@
 2. Install a simple HTTP server if you don't have one installed. If you have Python installed, run:
    
    ```bash
-    # $ python -m http.server 8080
+    python -m http.server 8080
     ```
    OR
     ```bash
-    # npx vite
+    npx vite
     ```
 
 5. Open your browser and navigate to `http://localhost:8080/`. The visualization should load in the browser window.
